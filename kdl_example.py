@@ -2,8 +2,10 @@
 # Authors: Chaitanya Perugu, Ashwin Sahasrabudhe
 
 import mykdl as mk
+from Quaternion import Quaternion
+import robot
 
-baxter = mk.Robot()
+baxter = robot.Baxter()
 baxfk = mk.FKSolver(baxter)
 
 # Forward Pose Kinematics
@@ -18,7 +20,7 @@ T = baxfk.solveFK(joint_pose)
 print T
 
 # Quaternion Euler Conversion
-quat = mk.Quaternion((0, 1, 0, 0))
+quat = Quaternion((0, 1, 0, 0))
 euler = quat.q2e()
 
 print "Quaternion = {}".format(quat.value())
