@@ -1,28 +1,64 @@
 # Created on Fri Feb 16 20:13:27 2018
 # Authors: Chaitanya Perugu, Ashwin Sahasrabudhe
 
-import mykdl as mk
+#%%
+import numpy as np
 from Quaternion import Quaternion
 import robot
+from FKSolver import FKSolver
+from IKSolver import IKSolver
 
 baxter = robot.Baxter()
-baxfk = mk.FKSolver(baxter)
 
-# Forward Pose Kinematics
-print "Pose 1: Transformation matrix"
+#%% Forward Pose Kinematics
+baxfk = FKSolver(baxter)
+
+print "Pose 1: End Pose"
 joint_pose = {'s0':0, 's1':0, 'e0':0, 'e1':0, 'w0':0, 'w1':0, 'w2':0}
-T = baxfk.solveFK(joint_pose)
-print T
+pose = baxfk.solveFK(joint_pose, visualize=True, output='pr')
+print pose
 
-print "Pose 2: Transformation matrix"
-joint_pose = {'s0':60, 's1':20, 'e0':10, 'e1':0, 'w0':-10, 'w1':-20, 'w2':-30}
-T = baxfk.solveFK(joint_pose)
-print T
+print "Pose 2: Visualization"
+joint_pose = {'s0':-45, 's1':30, 'e0':-30, 'e1':30, 'w0':-45, 'w1':0, 'w2':100}
+#baxfk.visualize_pose(joint_pose)
 
-# Quaternion Euler Conversion
+#%% Quaternion Euler Conversion
 quat = Quaternion((0, 1, 0, 0))
 euler = quat.q2e()
 
 print "Quaternion = {}".format(quat.value())
 print "Euler angles = "
 euler.display()
+
+#%% Jacobians
+#joint_pose = {'s0':0, 's1':0, 'e0':0, 'e1':0, 'w0':0, 'w1':0, 'w2':0}
+joint_pose = {'s0':-45, 's1':30, 'e0':-30, 'e1':30, 'w0':-45, 'w1':0, 'w2':100}
+
+J = baxter.jacobian(joint_pose)
+print "Jacobian = "
+J.display()
+
+print "Is Jacobian singular? ", J.is_singular()
+print "Pseudoinverse = "
+print np.around(J.pinv(), 3)
+print "Null projector = "
+print np.around(J.nullprojector(), 3)
+print "Yoshikawa Manipulability Index = "
+print J.yoshikawa()
+
+#%% Workspace
+#mk.workspace(baxter, num_samples=3)
+
+#%% Inverse Pose Kinematics
+curr_jpose =  {'s0':15, 's1':10, 'e0':-10, 'e1':10, 'w0':-15, 'w1':0, 'w2':10}
+baxik = IKSolver(baxter, curr_jpose)
+curr_tpose = baxik.fk.solveFK(curr_jpose, output='pr')
+
+j1 = {'s0':0, 's1':10, 'e0':0, 'e1':45, 'w0':0, 'w1':0, 'w2':0}
+j2 = {'s0':0, 's1':0, 'e0':15, 'e1':0, 'w0':20, 'w1':10, 'w2':0}
+end_tpose = {'x':0.25, 'y':-0.25, 'z':0.25, 'rx':0, 'ry':0, 'rz':0}
+
+print curr_tpose
+ikans = baxik.PsuedoInverse(end_tpose)
+print ikans
+print baxik.lazy(j1, j2)
